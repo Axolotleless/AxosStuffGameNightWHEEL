@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axo's Stuff Game Night GAMES</title>
+
+  <!-- press start 2p is THE retro font, no arguments -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* -- root vars, change these if you want a different vibe -- */
+    :root {
+      --bg: #ffffff;
+      --surface: #f5f5f0;
+      --surface2: #eeeeea;
+      --border: #111111;
+      --accent: #f5c800;
+      --accent2: #c8a000;
+      --accent3: #f5c800;
+      --text: #111111;
+      --text-dim: #555555;
+      --red: #cc0000;
+      --green: #007700;
+      --pixel: "Press Start 2P", monospace;
+      --mono: "VT323", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 18px;
+      min-height: 100vh;
+
+    }
+
+    /* -- username gate overlay -- */
+    #username-gate {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      gap: 2rem;
+    }
+    #username-gate h1 {
+      font-family: var(--pixel);
+      font-size: clamp(10px, 2.5vw, 18px);
+      color: var(--accent);
+      text-shadow: none;
+      text-align: center;
+      line-height: 2;
+    }
+    #username-gate p {
+      color: var(--text-dim);
+      font-size: 20px;
+      text-align: center;
+    }
+    #username-gate input {
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--pixel);
+      font-size: 11px;
+      padding: 1rem 1.5rem;
+      outline: none;
+      width: min(320px, 90vw);
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    #username-gate input::placeholder { color: var(--text-dim); }
+    #username-gate button {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      font-family: var(--pixel);
+      font-size: 10px;
+      padding: 1rem 2rem;
+      cursor: pointer;
+      transition: opacity 0.1s;
+      letter-spacing: 1px;
+    }
+    #username-gate button:hover { opacity: 0.8; }
+    #username-gate .admin-toggle {
+      font-size: 14px;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    #admin-key-field {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    #admin-key-field input {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+    #admin-key-field p { font-size: 14px; color: var(--accent2); }
+
+    /* -- main app (hidden until username is set) -- */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+
+    /* -- header -- */
+    header {
+      padding: 2rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: var(--surface);
+    }
+    header h1 {
+      font-family: var(--pixel);
+      font-size: clamp(8px, 2vw, 14px);
+      color: var(--accent3);
+      text-shadow: none;
+      line-height: 1.8;
+    }
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      font-size: 16px;
+    }
+    .badge {
+      padding: 4px 12px;
+      font-family: var(--pixel);
+      font-size: 8px;
+      letter-spacing: 1px;
+    }
+    .badge-admin { background: var(--accent); color: #111111; }
+    .badge-user { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+    .online-count { color: var(--green); font-size: 16px; }
+    .online-count::before { content: "▶ "; }
+
+    /* -- game night banner -- */
+    #game-night-banner {
+      padding: 1.5rem 2rem;
+      background: var(--surface2);
+      border-bottom: 2px solid var(--border);
+      display: none; /* shown when game night is active */
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    #game-night-banner.active {
+      display: flex;
+      border-bottom-color: var(--accent);
+      animation: pulse-border 2s infinite;
+    }
+    #game-night-banner.inactive-notice {
+      display: flex;
+      border-bottom-color: var(--text-dim);
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-bottom-color: var(--accent); }
+      50% { border-bottom-color: transparent; }
+    }
+    #banner-game {
+      font-family: var(--pixel);
+      font-size: clamp(8px, 1.8vw, 13px);
+      color: #111111;
+    }
+    #banner-label {
+      font-size: 20px;
+      color: var(--text-dim);
+    }
+    #banner-spin-info {
+      font-size: 15px;
+      color: var(--text-dim);
+      margin-left: auto;
+    }
+
+    /* -- layout -- */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 0;
+      flex: 1;
+    }
+    @media (max-width: 768px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    /* -- games section -- */
+    #games-section {
+      padding: 2rem;
+      border-right: 2px solid var(--border);
+    }
+    .section-title {
+      font-family: var(--pixel);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 3px;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+    }
+
+    /* -- add game form -- */
+    .add-game-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .add-game-form input {
+      flex: 1;
+      min-width: 200px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 18px;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .add-game-form input:focus { border-color: var(--accent); }
+    .add-game-form input::placeholder { color: var(--text-dim); }
+    .btn {
+      background: transparent;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--pixel);
+      font-size: 9px;
+      padding: 0.75rem 1.2rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.1s, color 0.1s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--accent); color: #111111; }
+    .btn-danger { border-color: var(--red); color: var(--red); }
+    .btn-danger:hover { background: var(--red); color: var(--bg); }
+    .btn-dim { border-color: var(--text-dim); color: var(--text-dim); }
+
+    /* -- game list -- */
+    #game-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .game-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .game-item::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .game-item:hover { border-color: var(--accent); }
+    .game-item:hover::before { opacity: 1; }
+    .game-item.highlight {
+      border-color: var(--accent3);
+      animation: new-game-pop 0.4s ease;
+    }
+    @keyframes new-game-pop {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .game-name {
+      flex: 1;
+      font-size: 20px;
+      color: var(--text);
+    }
+    .game-meta {
+      font-size: 14px;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .game-actions { display: flex; gap: 0.4rem; }
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.15s;
+    }
+    .icon-btn:hover { border-color: var(--red); color: var(--red); }
+    .icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .empty-state {
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 16px;
+      line-height: 2;
+    }
+    .empty-state strong {
+      font-family: var(--pixel);
+      font-size: 10px;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 1rem;
+    }
+
+    /* -- wheel sidebar -- */
+    #wheel-section {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      background: var(--surface);
+    }
+
+    /* -- actual wheel -- */
+    #wheel-canvas-wrap {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    canvas#wheel {
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      box-shadow: none;
+    }
+    /* pointer triangle above wheel */
+    .wheel-pointer {
+      width: 0; height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 24px solid var(--accent3);
+      
+    }
+    #spin-btn {
+      width: 100%;
+      padding: 1rem;
+      font-size: 11px;
+      letter-spacing: 2px;
+    }
+    #spin-result {
+      text-align: center;
+      font-family: var(--pixel);
+      font-size: 9px;
+      color: #111111;
+      line-height: 2;
+      min-height: 3em;
+    }
+
+    /* -- game night toggle (admin only) -- */
+    #admin-controls {
+      display: none; /* shown only for admin */
+      flex-direction: column;
+      gap: 0.75rem;
+      border-top: 2px solid var(--border);
+      padding-top: 1.5rem;
+    }
+    #admin-controls .section-title { margin-bottom: 0.5rem; }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 16px;
+    }
+    .toggle {
+      position: relative;
+      width: 48px; height: 24px;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .toggle-slider::before {
+      content: "";
+      position: absolute;
+      height: 16px; width: 16px;
+      left: 3px; top: 3px;
+      background: var(--text-dim);
+      transition: 0.2s;
+    }
+    .toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(24px); background: var(--bg); }
+
+    /* -- online users list -- */
+    #users-section {
+      border-top: 2px solid var(--border);
+      padding-top: 1.5rem;
+    }
+    #user-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .user-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 16px;
+      color: var(--text-dim);
+    }
+    .user-item .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .user-item.is-admin .dot { background: var(--accent2); }
+    .user-item.is-me { color: var(--text); }
+
+    /* -- toast notifications -- */
+    #toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 1rem 1.5rem;
+      font-family: var(--pixel);
+      font-size: 8px;
+      color: var(--text);
+      line-height: 1.8;
+      max-width: 280px;
+      animation: slide-in 0.3s ease forwards;
+    }
+    .toast.spin-toast { border-left-color: var(--accent3); }
+    .toast.error-toast { border-left-color: var(--red); }
+    @keyframes slide-in {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slide-out {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(120%); opacity: 0; }
+    }
+
+    /* scrollbar styling because defaults are ugly */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); }
+  </style>
+</head>
+
+<body>
+
+<!-- USERNAME GATE -- everyone sees this first -->
+<div id="username-gate">
+  <h1>AXO'S STUFF<br/>GAME NIGHT<br/>GAMES</h1>
+  <p>who are you??</p>
+  <input id="username-input" type="text" placeholder="ENTER USERNAME" maxlength="20" />
+  <button onclick="enterSite()">► ENTER</button>
+  <span class="admin-toggle" onclick="toggleAdminField()">i'm axo</span>
+  <div id="admin-key-field">
+    <p>admin key:</p>
+    <input id="admin-key-input" type="password" placeholder="••••••••" />
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <header>
+    <h1>AXO'S STUFF // GAME NIGHT GAMES</h1>
+    <div class="header-meta">
+      <span id="user-badge" class="badge badge-user">USER</span>
+      <span id="welcome-name" style="font-size:16px; color:var(--text-dim);"></span>
+      <span id="online-count" class="online-count" style="font-size:16px;">0 ONLINE</span>
+      <button class="btn btn-dim" style="margin-left:auto; font-size:8px; padding:6px 12px;" onclick="logout()">LEAVE</button>
+    </div>
+  </header>
+
+  <!-- this banner shows what's spinning / if game night is off -->
+  <div id="game-night-banner">
+    <span id="banner-label">NOW PLAYING:</span>
+    <span id="banner-game">--</span>
+    <span id="banner-spin-info"></span>
+  </div>
+
+  <main>
+    <!-- games list on the left -->
+    <section id="games-section">
+      <p class="section-title">// game list</p>
+
+      <div class="add-game-form">
+        <input id="new-game-input" type="text" placeholder="add a game..." maxlength="60"
+          onkeydown="if(event.key==='Enter') addGame()" />
+        <button class="btn" onclick="addGame()">► ADD</button>
+      </div>
+
+      <div id="game-list">
+        <div class="empty-state">
+          <strong>NO GAMES YET</strong>
+          add something above!
+        </div>
+      </div>
+    </section>
+
+    <!-- wheel on the right -->
+    <section id="wheel-section">
+      <p class="section-title">// spin wheel</p>
+
+      <div id="wheel-canvas-wrap">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheel" width="280" height="280"></canvas>
+      </div>
+
+      <!-- spin button -- only admin gets a working one -->
+      <button class="btn" id="spin-btn" onclick="spinWheel()">
+        ► SPIN (ADMIN ONLY)
+      </button>
+      <div id="spin-result">waiting for axo to spin...</div>
+
+      <!-- admin controls -- hidden for normal users -->
+      <div id="admin-controls">
+        <p class="section-title">// admin panel</p>
+        <div class="toggle-row">
+          <label class="toggle">
+            <input type="checkbox" id="gamenight-toggle" onchange="setGameNight(this.checked)" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span>game night active</span>
+        </div>
+        <p style="font-size:14px; color:var(--text-dim); line-height:1.8;">
+          spin the wheel to pick a game and notify everyone!
+        </p>
+      </div>
+
+      <!-- who's online -->
+      <div id="users-section">
+        <p class="section-title">// online now</p>
+        <div id="user-list"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- toast notifications appear here -->
+<div id="toast-container"></div>
+
+<script>
+// ===================================================================
+// CONFIG -- CHANGE THIS to point at your cloudflare worker URL!!!
+// deploy worker.js to cloudflare and paste the URL here
+// it'll look like https://game-night.YOUR-SUBDOMAIN.workers.dev
+// ===================================================================
+const WORKER_URL = "https://game-night.acc943132.workers.dev";
+
+// ===================================================================
+// STATE -- all the stuff we track on the client
+// ===================================================================
+let myUsername = "";
+let myAdminKey = "";
+let isAdmin = false;
+let games = [];
+let spinState = { currentGame: null, isGameNight: false };
+let isSpinning = false; // wheel animation lock
+let spinAngle = 0; // current wheel rotation in degrees
+let pollTimer = null;
+let heartbeatTimer = null;
+let lastSpinAt = null; // so we only toast new spins
+
+// ===================================================================
+// STARTUP -- entering the site
+// ===================================================================
+
+function enterSite() {
+  const name = document.getElementById("username-input").value.trim();
+  if (!name) { toast("enter a name first!!", "error"); return; }
+
+  myUsername = name;
+  myAdminKey = document.getElementById("admin-key-input").value.trim();
+
+  // we'll verify admin status server-side on first request
+  // but flag it locally so we can show/hide ui stuff
+  isAdmin = !!myAdminKey;
+
+  localStorage.setItem("gn_username", myUsername);
+  // dont save admin key in localstorage!! too risky
+  // they'll have to re-enter it each session
+
+  document.getElementById("username-gate").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+
+  document.getElementById("welcome-name").textContent = myUsername;
+
+  if (isAdmin) {
+    document.getElementById("user-badge").className = "badge badge-admin";
+    document.getElementById("user-badge").textContent = "ADMIN";
+    document.getElementById("admin-controls").style.display = "flex";
+    document.getElementById("spin-btn").style.borderColor = "var(--accent2)";
+    document.getElementById("spin-btn").style.color = "var(--accent2)";
+  } else {
+    document.getElementById("spin-btn").disabled = true;
+    document.getElementById("spin-btn").style.opacity = "0.4";
+    document.getElementById("spin-btn").title = "only axo can spin!!";
+  }
+
+  // kick off data loading -- but first verify admin key if they entered one
+  if (isAdmin) {
+    // do a quick test spin GET which will also verify our key implicitly
+    // actually lets do a POST to /spin with a dummy verify flag
+    // wait no the worker doesnt have a verify route... just do GET /spin
+    // the worker checks admin key on POST only, so lets try a harmless POST
+    // to verify -- if key is wrong we get 403 back and boot them out
+    verifyAdminThenLoad();
+  } else {
+    loadGames();
+    pollState();
+    heartbeatTimer = setInterval(sendHeartbeat, 15_000);
+    pollTimer = setInterval(pollState, 5_000);
+  }
+}
+
+function bootToLogin(msg) {
+  // something went wrong, kick them back to the login screen
+  clearInterval(pollTimer);
+  clearInterval(heartbeatTimer);
+  document.getElementById("app").style.display = "none";
+  document.getElementById("username-gate").style.display = "flex";
+  // show error under the button area
+  let err = document.getElementById("login-error");
+  if (!err) {
+    err = document.createElement("p");
+    err.id = "login-error";
+    err.style.cssText = "color:#cc0000; font-family:'Press Start 2P',monospace; font-size:9px; text-align:center; line-height:2;";
+    document.getElementById("username-gate").appendChild(err);
+  }
+  err.textContent = msg;
+  // clear admin key field
+  document.getElementById("admin-key-input").value = "";
+  myAdminKey = "";
+  isAdmin = false;
+}
+
+async function verifyAdminThenLoad() {
+  try {
+    // POST to /spin with current game state -- if key is wrong worker returns 403
+    // we use the existing spin state (null game is fine, we just want the auth check)
+    const res = await fetch(WORKER_URL + "/spin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Username": myUsername,
+        "X-Admin-Key": myAdminKey,
+      },
+      body: JSON.stringify({ currentGame: null, isGameNight: false }),
+    });
+
+    if (res.status === 403) {
+      // wrong password!! boot them out
+      bootToLogin("wrong admin key!!");
+      return;
+    }
+
+    // key is good!! proceed normally
+    loadGames();
+    pollState();
+    heartbeatTimer = setInterval(sendHeartbeat, 15_000);
+    pollTimer = setInterval(pollState, 5_000);
+
+  } catch (e) {
+    // network error -- still let them in but warn
+    console.error("admin verify failed:", e);
+    bootToLogin("couldn't reach server to verify key!!");
+  }
+}
+
+function toggleAdminField() {
+  const field = document.getElementById("admin-key-field");
+  field.style.display = field.style.display === "flex" ? "none" : "flex";
+}
+
+function logout() {
+  localStorage.removeItem("gn_username");
+  clearInterval(pollTimer);
+  clearInterval(heartbeatTimer);
+  location.reload();
+}
+
+// check if they already set a username last time (non-admin only, for convenience)
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem("gn_username");
+  if (saved) {
+    document.getElementById("username-input").value = saved;
+  }
+});
+
+// ===================================================================
+// API HELPERS -- talking to the cloudflare worker
+// ===================================================================
+
+function headers(extra = {}) {
+  return {
+    "Content-Type": "application/json",
+    "X-Username": myUsername,
+    ...(myAdminKey ? { "X-Admin-Key": myAdminKey } : {}),
+    ...extra,
+  };
+}
+
+async function apiFetch(path, options = {}) {
+  const res = await fetch(WORKER_URL + path, {
+    ...options,
+    headers: headers(options.headers || {}),
+  });
+  return res.json();
+}
+
+// ===================================================================
+// GAMES -- loading, adding, deleting
+// ===================================================================
+
+async function loadGames() {
+  try {
+    games = await apiFetch("/games");
+    renderGames();
+  } catch (e) {
+    toast("couldn't load games!! worker down?", "error");
+    console.error("loadGames broke:", e);
+  }
+}
+
+function renderGames(highlightId = null) {
+  const list = document.getElementById("game-list");
+
+  if (!games.length) {
+    list.innerHTML = `<div class="empty-state">
+      <strong>NO GAMES YET</strong>
+      add something above!
+    </div>`;
+    drawWheel(); // draw empty wheel
+    return;
+  }
+
+  list.innerHTML = games.map((g) => {
+    // can delete if admin OR if you added it
+    const canDelete = isAdmin || g.addedBy === myUsername;
+    const isMe = g.addedBy === myUsername;
+
+    return `<div class="game-item${highlightId === g.id ? " highlight" : ""}" id="gi-${g.id}">
+      <span class="game-name">${esc(g.name)}</span>
+      <span class="game-meta">${isMe ? "you" : esc(g.addedBy)}</span>
+      <div class="game-actions">
+        <button class="icon-btn" onclick="deleteGame('${g.id}')"
+          ${canDelete ? "" : "disabled"} title="${canDelete ? "delete" : "not yours to delete!"}">✕</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  drawWheel();
+}
+
+async function addGame() {
+  const input = document.getElementById("new-game-input");
+  const name = input.value.trim();
+  if (!name) return;
+
+  try {
+    const newGame = await apiFetch("/games", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+
+    if (newGame.error) { toast(newGame.error, "error"); return; }
+
+    games.push(newGame);
+    input.value = "";
+    renderGames(newGame.id);
+    toast(`"${name}" added!`);
+  } catch (e) {
+    toast("add failed!! worker issue maybe", "error");
+    console.error("addGame broke:", e);
+  }
+}
+
+async function deleteGame(id) {
+  const game = games.find((g) => g.id === id);
+  if (!game) return;
+  if (!confirm(`delete "${game.name}"?`)) return;
+
+  try {
+    const res = await apiFetch("/games/" + id, { method: "DELETE" });
+    if (res.error) { toast(res.error, "error"); return; }
+
+    games = games.filter((g) => g.id !== id);
+    renderGames();
+    toast(`"${game.name}" removed`);
+  } catch (e) {
+    toast("delete failed!! check worker", "error");
+    console.error("deleteGame broke:", e);
+  }
+}
+
+// ===================================================================
+// SPIN WHEEL -- drawing and spinning
+// ===================================================================
+
+// nice retro colors for wheel slices
+const SLICE_COLORS = [
+  "#f5c800", "#fff8d6", "#fce97a", "#fffdf0",
+  "#e6b800", "#fff3a0", "#ffd633", "#fffbe8",
+  "#f0c000", "#fef9e0",
+];
+
+function drawWheel(highlightIndex = -1) {
+  const canvas = document.getElementById("wheel");
+  const ctx = canvas.getContext("2d");
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const r = cx - 4;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!games.length) {
+    // empty state wheel
+    ctx.fillStyle = "#eeeeea";
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#111111";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "#555555";
+    ctx.font = "bold 12px 'VT323', monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("add games first!", cx, cy);
+    return;
+  }
+
+  const n = games.length;
+  const slice = (Math.PI * 2) / n;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((spinAngle * Math.PI) / 180);
+  ctx.translate(-cx, -cy);
+
+  for (let i = 0; i < n; i++) {
+    const start = i * slice - Math.PI / 2;
+    const end = start + slice;
+    const color = SLICE_COLORS[i % SLICE_COLORS.length];
+    const isHighlighted = i === highlightIndex;
+
+    // slice fill
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = isHighlighted ? "#ffec00" : color;
+    ctx.fill();
+    ctx.strokeStyle = "#111111";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // text label -- stroke first for outline, then fill on top
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + slice / 2);
+    ctx.textAlign = "right";
+    ctx.font = `bold ${Math.max(10, Math.min(14, 180 / n))}px 'VT323', monospace`;
+    ctx.textBaseline = "middle";
+    const label = games[i].name.length > 14 ? games[i].name.slice(0, 12) + ".." : games[i].name;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineJoin = "round";
+    ctx.strokeText(label, r - 8, 0);
+    ctx.fillStyle = "#111111";
+    ctx.fillText(label, r - 8, 0);
+    ctx.restore();
+  }
+
+  // center dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+  ctx.fillStyle = "#111111";
+  ctx.fill();
+  ctx.strokeStyle = "#f5c800";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+async function spinWheel() {
+  if (!isAdmin) { toast("only axo can spin!!", "error"); return; }
+  if (!games.length) { toast("no games to spin!!", "error"); return; }
+  if (isSpinning) return; // dont double spin
+
+  isSpinning = true;
+
+  // pick a random winner
+  const winnerIndex = Math.floor(Math.random() * games.length);
+  const winner = games[winnerIndex];
+
+  // figure out how much to spin -- at least 5 full rotations + landing angle
+  const sliceDeg = 360 / games.length;
+  // we want the pointer (top, which is -90deg offset) to point at winner slice
+  // winner slice starts at: winnerIndex * sliceDeg - 90 (because of our -PI/2 offset)
+  const targetAngle = 360 * 5 + (360 - winnerIndex * sliceDeg);
+  const startAngle = spinAngle;
+  const totalSpin = targetAngle + (360 - (startAngle % 360));
+
+  // animate the spin -- eases out at the end
+  const duration = 4000;
+  const startTime = performance.now();
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+
+    spinAngle = startAngle + totalSpin * eased;
+    drawWheel();
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      // spin is done!! tell the server
+      isSpinning = false;
+      drawWheel(winnerIndex);
+      document.getElementById("spin-result").textContent =
+        `► ${winner.name.toUpperCase()} ◄`;
+      broadcastSpin(winner);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+async function broadcastSpin(winner) {
+  try {
+    const gameNightOn = document.getElementById("gamenight-toggle")?.checked ?? spinState.isGameNight;
+    const res = await apiFetch("/spin", {
+      method: "POST",
+      body: JSON.stringify({
+        currentGame: winner.name,
+        isGameNight: gameNightOn,
+      }),
+    });
+
+    if (res.error) { toast(res.error, "error"); return; }
+
+    spinState = res;
+    updateBanner();
+    toast(`spun! now playing: ${winner.name}`, "spin");
+  } catch (e) {
+    toast("spin broadcast failed!! but wheel did spin at least lol", "error");
+    console.error("broadcastSpin broke:", e);
+  }
+}
+
+async function setGameNight(active) {
+  // just update the spin state with current game but new game night status
+  try {
+    await apiFetch("/spin", {
+      method: "POST",
+      body: JSON.stringify({
+        currentGame: spinState.currentGame,
+        isGameNight: active,
+      }),
+    });
+  } catch (e) {
+    toast("couldn't update game night status!!", "error");
+    console.error("setGameNight broke:", e);
+  }
+}
+
+// ===================================================================
+// POLLING -- keeps everyone in sync (poor mans realtime lol)
+// ===================================================================
+
+async function pollState() {
+  try {
+    const data = await apiFetch("/spin");
+    const prevSpinAt = lastSpinAt;
+
+    // if someone spun (new spunAt value) and it wasnt us, notify!!
+    if (data.spunAt && data.spunAt !== prevSpinAt && prevSpinAt !== null) {
+      const byUs = data.spunBy === myUsername;
+      if (!byUs) {
+        toast(`axo spun the wheel!\nnow playing: ${data.currentGame}`, "spin");
+      }
+    }
+
+    lastSpinAt = data.spunAt;
+    spinState = data;
+    updateBanner();
+    renderOnlineUsers(data.onlineUsers || []);
+
+    // sync game night toggle for admin
+    if (isAdmin) {
+      const toggle = document.getElementById("gamenight-toggle");
+      if (toggle) toggle.checked = data.isGameNight;
+    }
+
+    // also refresh games occasionally in case someone else added something
+    // (every 3rd poll to avoid hammering KV too hard)
+    if (Math.random() < 0.33) {
+      const freshGames = await apiFetch("/games");
+      // only re-render if something actually changed
+      if (JSON.stringify(freshGames) !== JSON.stringify(games)) {
+        games = freshGames;
+        renderGames();
+      }
+    }
+  } catch (e) {
+    console.warn("poll hiccupped:", e);
+    // dont toast on every poll failure, itd be annoying
+  }
+}
+
+async function sendHeartbeat() {
+  try {
+    await apiFetch("/heartbeat", { method: "POST" });
+  } catch (e) {
+    // its fine, just missed a beat
+  }
+}
+
+// ===================================================================
+// UI UPDATES
+// ===================================================================
+
+function updateBanner() {
+  const banner = document.getElementById("game-night-banner");
+  const bannerGame = document.getElementById("banner-game");
+  const bannerLabel = document.getElementById("banner-label");
+  const bannerInfo = document.getElementById("banner-spin-info");
+
+  if (spinState.isGameNight && spinState.currentGame) {
+    banner.className = "active";
+    bannerLabel.textContent = "NOW PLAYING:";
+    bannerGame.textContent = spinState.currentGame.toUpperCase();
+    const when = spinState.spunAt
+      ? `spun ${timeAgo(spinState.spunAt)}`
+      : "";
+    bannerInfo.textContent = when;
+
+    if (isAdmin) {
+      document.getElementById("spin-result").textContent =
+        `► ${spinState.currentGame.toUpperCase()} ◄`;
+    }
+  } else if (!spinState.isGameNight) {
+    banner.className = "inactive-notice";
+    bannerLabel.textContent = "STATUS:";
+    bannerGame.textContent = "NO GAME NIGHT RIGHT NOW";
+    bannerInfo.textContent = "";
+  } else {
+    banner.className = "";
+  }
+}
+
+function renderOnlineUsers(users) {
+  const list = document.getElementById("user-list");
+  const count = document.getElementById("online-count");
+
+  count.textContent = `${users.length} ONLINE`;
+
+  if (!users.length) {
+    list.innerHTML = `<span style="color:var(--text-dim); font-size:15px;">just you... or nobody lol</span>`;
+    return;
+  }
+
+  list.innerHTML = users.map((u) => {
+    const isMe = u.username === myUsername;
+    return `<div class="user-item${isMe ? " is-me" : ""}">
+      <span class="dot"></span>
+      <span>${esc(u.username)}${isMe ? " (you)" : ""}</span>
+    </div>`;
+  }).join("");
+}
+
+// ===================================================================
+// UTILS -- small helpers
+// ===================================================================
+
+function esc(str) {
+  // basic XSS prevention, dont skip this!!
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function timeAgo(ts) {
+  const seconds = Math.floor((Date.now() - ts) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  return `${Math.floor(seconds / 3600)}h ago`;
+}
+
+function toast(msg, type = "normal") {
+  const container = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  el.className = `toast${type === "spin" ? " spin-toast" : type === "error" ? " error-toast" : ""}`;
+  el.textContent = msg;
+  container.appendChild(el);
+
+  // auto remove after 4 seconds
+  setTimeout(() => {
+    el.style.animation = "slide-out 0.3s ease forwards";
+    setTimeout(() => el.remove(), 300);
+  }, 4000);
+}
+
+// initial wheel draw (empty state) so it doesnt just show nothing
+drawWheel();
+</script>
+</body>
+</html>
